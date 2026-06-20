@@ -1,193 +1,192 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import Grid from '@mui/material/Grid';
+import Container from '@mui/material/Container';
+import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box';
+import TrackCard from './Trackcard';
+import PlayerBar from './Playerbar';
+import Header from './Header';
+import UploadModal from './UploadModal';
+import Sidebar from './Sidebar';
 
 function TrackList() {
-    // Состояния
     const [tracks, setTracks] = useState([]);
+    const [filteredTracks, setFilteredTracks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedTrack, setSelectedTrack] = useState(null);
-    
-    // Форма загрузки
-    const [title, setTitle] = useState('');
-    const [author, setAuthor] = useState('');
-    const [audioFile, setAudioFile] = useState(null);
-    const [coverFile, setCoverFile] = useState(null);
-    const [uploading, setUploading] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [uploadModalOpen, setUploadModalOpen] = useState(false);
+    const [genres, setGenres] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedGenre, setSelectedGenre] = useState('all');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+        const saved = localStorage.getItem('sidebarOpen');
+        return saved !== null ? JSON.parse(saved) : true;
+    });
 
-    // Получить все треки с сервера
+    useEffect(() => {
+        localStorage.setItem('sidebarOpen', JSON.stringify(isSidebarOpen));
+    }, [isSidebarOpen]);
+
+    useEffect(() => {
+        fetchTracks();
+        fetchGenres();
+    }, []);
+
+    // Поиск при изменении запроса или жанра
+    useEffect(() => {
+        performSearch();
+    }, [searchQuery, selectedGenre]);
+
     const fetchTracks = async () => {
         setLoading(true);
         try {
             const response = await axios.get('http://localhost:3000/api/tracks');
             setTracks(response.data);
+            setFilteredTracks(response.data);
         } catch (error) {
-            console.error('Ошибка загрузки треков:', error);
+            console.error('Ошибка:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    // Загружаем список треков при запуске
-    useEffect(() => {
-        fetchTracks();
-    }, []);
-
-    // Загрузить новый трек
-    const handleUpload = async (e) => {
-        e.preventDefault();
-        
-        if (!audioFile) {
-            alert('Выберите аудиофайл!');
-            return;
+    const fetchGenres = async () => {
+        try {
+            const response = await axios.get('http://localhost:3000/api/genres');
+            setGenres(response.data);
+        } catch (error) {
+            console.error('Ошибка загрузки жанров:', error);
         }
-        
-        setUploading(true);
-        
-        const formData = new FormData();
-        formData.append('title', title);
-        formData.append('author', author);
-        formData.append('audio', audioFile);
-        if (coverFile) formData.append('cover', coverFile);
-        
+    };
+
+    const performSearch = async () => {
+        try {
+            const params = new URLSearchParams();
+            if (searchQuery.trim()) params.append('query', searchQuery.trim());
+            if (selectedGenre !== 'all') params.append('genre', selectedGenre);
+            
+            const response = await axios.get(`http://localhost:3000/api/tracks/search?${params.toString()}`);
+            setFilteredTracks(response.data);
+        } catch (error) {
+            console.error('Ошибка поиска:', error);
+        }
+    };
+
+    const handleSearch = (query) => {
+        setSearchQuery(query);
+    };
+
+    const handleGenreSelect = (genre) => {
+        setSelectedGenre(genre);
+    };
+
+    const handleNext = () => {
+        if (!selectedTrack || tracks.length === 0) return;
+        const currentIndex = tracks.findIndex(t => t.id === selectedTrack.id);
+        const nextIndex = (currentIndex + 1) % tracks.length;
+        setSelectedTrack(tracks[nextIndex]);
+    };
+
+    const handlePrev = () => {
+        if (!selectedTrack || tracks.length === 0) return;
+        const currentIndex = tracks.findIndex(t => t.id === selectedTrack.id);
+        const prevIndex = (currentIndex - 1 + tracks.length) % tracks.length;
+        setSelectedTrack(tracks[prevIndex]);
+    };
+
+    const handleUpload = async (formData) => {
         try {
             await axios.post('http://localhost:3000/api/tracks', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            
-            // Очищаем форму
-            setTitle('');
-            setAuthor('');
-            setAudioFile(null);
-            setCoverFile(null);
-            
-            // Обновляем список
             fetchTracks();
-            
-            alert('Трек успешно загружен!');
+            fetchGenres();
+            alert('Трек загружен!');
         } catch (error) {
-            console.error('Ошибка загрузки:', error);
-            alert('Ошибка при загрузке трека');
-        } finally {
-            setUploading(false);
+            console.error('Ошибка:', error);
+            alert('Ошибка загрузки');
         }
     };
 
-    // Показываем загрузку
+    const handlePlay = (track) => {
+        if (selectedTrack?.id === track.id) {
+            setIsPlaying(!isPlaying);
+        } else {
+            setSelectedTrack(track);
+            setIsPlaying(true);
+        }
+    };
+
     if (loading) {
-        return <div>Загрузка треков...</div>;
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                <CircularProgress />
+            </Box>
+        );
     }
 
     return (
-        <div style={{ padding: '20px' }}>
-            <h1>Musicboard</h1>
-            
-            {/* ФОРМА ЗАГРУЗКИ */}
-            <div style={{ border: '1px solid #ccc', padding: '20px', marginBottom: '30px', borderRadius: '8px' }}>
-                <h2>Загрузить новый трек</h2>
-                <form onSubmit={handleUpload}>
-                    <div style={{ marginBottom: '10px' }}>
-                        <input
-                            type="text"
-                            placeholder="Название трека"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
-                            style={{ padding: '8px', width: '200px', marginRight: '10px' }}
-                        />
-                        <input
-                            type="text"
-                            placeholder="Исполнитель"
-                            value={author}
-                            onChange={(e) => setAuthor(e.target.value)}
-                            required
-                            style={{ padding: '8px', width: '200px' }}
-                        />
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                        <label>Аудиофайл (MP3): </label>
-                        <input
-                            type="file"
-                            accept="audio/mp3,audio/mpeg"
-                            onChange={(e) => setAudioFile(e.target.files[0])}
-                            required
-                        />
-                    </div>
-                    <div style={{ marginBottom: '10px' }}>
-                        <label>Обложка (картинка): </label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setCoverFile(e.target.files[0])}
-                        />
-                    </div>
-                    <button type="submit" disabled={uploading}>
-                        {uploading ? 'Загрузка...' : 'Загрузить трек'}
-                    </button>
-                </form>
-            </div>
-            
-            {/* СПИСОК ТРЕКОВ */}
-            <h2>Библиотека треков ({tracks.length})</h2>
-            {tracks.length === 0 ? (
-                <p>Нет треков. Загрузите первый!</p>
-            ) : (
-                <div style={{ display: 'grid', gap: '15px' }}>
-                    {tracks.map((track) => (
-                        <div key={track.id} style={{ border: '1px solid #ddd', padding: '15px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                            {/* Обложка */}
-                            {track.cover_url ? (
-                                <img 
-                                    src={`http://localhost:3000${track.cover_url}`} 
-                                    alt="cover" 
-                                    style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px' }}
+        <>
+            <Header 
+                onUploadClick={() => setUploadModalOpen(true)} 
+                onSearch={handleSearch}
+            />
+            <Sidebar 
+                tracks={tracks} 
+                isOpen={isSidebarOpen} 
+                onToggle={() => setIsSidebarOpen(!isSidebarOpen)} 
+                onGenreSelect={handleGenreSelect}
+                genres={genres}
+                selectedGenre={selectedGenre}
+            />
+            <Container sx={{ py: 4, pb: 12, ml: isSidebarOpen ? '300px' : '100px' }}>
+                <Typography variant="h4" gutterBottom>
+                    Библиотека ({filteredTracks.length})
+                </Typography>
+                
+                {filteredTracks.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 8 }}>
+                        <Typography variant="h6" color="text.secondary">
+                            Ничего не найдено 😕
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Попробуй изменить поисковый запрос или сбросить фильтры
+                        </Typography>
+                    </Box>
+                ) : (
+                    <Grid container spacing={3}>
+                        {filteredTracks.map((track) => (
+                            <Grid item xs={12} sm={6} md={4} lg={3} key={track.id}>
+                                <TrackCard 
+                                    track={track} 
+                                    onPlay={handlePlay} 
+                                    isActive={selectedTrack?.id === track.id} 
+                                    isPlaying={isPlaying} 
                                 />
-                            ) : (
-                                <div style={{ width: '60px', height: '60px', background: '#333', borderRadius: '4px' }}></div>
-                            )}
-                            
-                            {/* Информация */}
-                            <div style={{ flex: 1 }}>
-                                <strong>{track.title}</strong> — {track.author}
-                            </div>
-                            
-                            {/* Кнопка воспроизведения */}
-                            <button onClick={() => setSelectedTrack(track)}>
-                                ▶ Воспроизвести
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            )}
+                            </Grid>
+                        ))}
+                    </Grid>
+                )}
+            </Container>
             
-            {/* АУДИОПЛЕЕР */}
-            {selectedTrack && (
-                <div style={{ 
-                    position: 'fixed', 
-                    bottom: 0, 
-                    left: 0, 
-                    right: 0, 
-                    background: '#222', 
-                    color: 'white', 
-                    padding: '15px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '15px'
-                }}>
-                    <div>
-                        <strong>Сейчас играет:</strong> {selectedTrack.title} — {selectedTrack.author}
-                    </div>
-                    <audio 
-                        controls 
-                        autoPlay 
-                        src={`http://localhost:3000/api/stream/${selectedTrack.id}`}
-                        style={{ flex: 1 }}
-                    />
-                    <button onClick={() => setSelectedTrack(null)} style={{ background: 'red', color: 'white', border: 'none', padding: '5px 10px' }}>
-                        ✕ Закрыть
-                    </button>
-                </div>
-            )}
-        </div>
+            <PlayerBar 
+                track={selectedTrack} 
+                tracks={tracks}
+                onNext={handleNext}
+                onPrev={handlePrev}
+                isPlaying={isPlaying}
+                setIsPlaying={setIsPlaying}
+            />
+            
+            <UploadModal 
+                open={uploadModalOpen} 
+                onClose={() => setUploadModalOpen(false)} 
+                onUpload={handleUpload} 
+            />
+        </>
     );
 }
 
