@@ -2,11 +2,11 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
-import HomePage from './pages/HomePage';
+import Homepage from './pages/Homepage';
 import LibraryPage from './pages/LibraryPage';
-import ArtistPage from './pages/ArtistPage';
-import AlbumPage from './pages/AlbumPage';
-import PlayerBar from './components/PlayerBar';
+import Artistpage from './pages/Artistpage';
+import Albumpage from './pages/Albumpage';
+import Playerbar from './components/Playerbar';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import UploadModal from './components/UploadModal';
@@ -17,7 +17,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import UnderConstruction from './pages/UnderConstruction';
 import AlbumList from './pages/AlbumList';
 import NewReleasesPage from './pages/NewReleasesPage';
-import PopularPage from './pages/PopularPage';
+import Popularpage from './pages/Popularpage';
 import i18n from './i18n';
 
 function App() {
