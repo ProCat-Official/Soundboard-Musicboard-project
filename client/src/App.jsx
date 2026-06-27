@@ -10,7 +10,7 @@ import PlayerBar from './components/Playerbar';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import UploadModal from './components/UploadModal';
-import BottomNav from './components/BottomNav';
+import BottomNav from "./components/Bottomnav";
 import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
