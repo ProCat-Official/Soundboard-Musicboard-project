@@ -1,103 +1,226 @@
 import { useState } from 'react';
+import { useNavigate }from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
-import InputBase from '@mui/material/InputBase';
-import { styled, alpha } from '@mui/material/styles';
-import MusicNoteIcon from '@mui/icons-material/MusicNote';
+import Button from '@mui/material/Button';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Box from '@mui/material/Box';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import AddIcon from '@mui/icons-material/Add';
-import SearchIcon from '@mui/icons-material/Search';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { useTheme } from '../context/ThemeContext';
-import Box from '@mui/material/Box';
+import SearchBar from './SearchBar';
 
-// Стилизованный поиск (как в Spotify)
-const Search = styled('div')(({ theme }) => ({
-    position: 'relative',
-    borderRadius: '20px',
-    backgroundColor: alpha(theme.palette.common.white, 0.15),
-    '&:hover': {
-        backgroundColor: alpha(theme.palette.common.white, 0.25),
-    },
-    marginLeft: 0,
-    width: '100%',
-    maxWidth: '400px',
-    [theme.breakpoints.up('sm')]: {
-        marginLeft: theme.spacing(3),
-        width: 'auto',
-    },
-    transition: 'all 0.3s ease',
-}));
-
-const SearchIconWrapper = styled('div')(({ theme }) => ({
-    padding: theme.spacing(0, 2),
-    height: '100%',
-    position: 'absolute',
-    pointerEvents: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-}));
-
-const StyledInputBase = styled(InputBase)(({ theme }) => ({
-    color: 'inherit',
-    width: '100%',
-    '& .MuiInputBase-input': {
-        padding: theme.spacing(1, 1, 1, 0),
-        paddingLeft: `calc(1em + ${theme.spacing(4)})`,
-        transition: theme.transitions.create('width'),
-        width: '100%',
-        [theme.breakpoints.up('md')]: {
-            width: '30ch',
-        },
-    },
-}));
-
-function Header({ onUploadClick, onSearch }) {
+function Header({ onUploadClick }) {
     const { theme, toggleTheme } = useTheme();
-    const [searchQuery, setSearchQuery] = useState('');
+    const { t, i18n } = useTranslation();
+    const navigate = useNavigate();
+    
+    const [languageAnchorEl, setLanguageAnchorEl] = useState(null);
+    const open = Boolean(languageAnchorEl);
 
-    const handleSearchChange = (e) => {
-        const value = e.target.value;
-        setSearchQuery(value);
-        onSearch(value);
+    const handleLanguageOpen = (event) => {
+        setLanguageAnchorEl(event.currentTarget);
     };
 
+    const handleLanguageClose = () => {
+        setLanguageAnchorEl(null);
+    };
+
+    const changeLanguage = (lang) => {
+        i18n.changeLanguage(lang);
+        localStorage.setItem('i18nextLng', lang);
+        handleLanguageClose();
+    };
+
+    const handleLogoClick = () => {
+        navigate('/');
+    };
+
+    const logoSrc = theme === 'dark' ? '/logos/logoD.png' : '/logos/logoM.png';
+
+    const currentLang = i18n.language || 'ua';
+    const langDisplay = currentLang === 'ua' ? 'UA' : currentLang === 'en' ? 'EN' : 'RU';
+
     return (
-        <AppBar position="sticky" color="primary" elevation={0} sx={{ zIndex: 1100 }}>
-            <Toolbar sx={{ gap: 1 }}>
+        <AppBar 
+            position="fixed"  // ← sticky → fixed
+            color="primary" 
+            elevation={0} 
+            sx={{ 
+                zIndex: 1100,
+                top: 0,
+                left: 0,
+                right: 0,
+                bgcolor: { 
+                    xs: theme === 'dark' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.5)',
+                    md: theme === 'dark' ? '#202020' : '#ffffff'
+                },
+                backdropFilter: { xs: 'blur(0.1px)', md: 'none' },
+                borderBottom: { xs: '1px solid', md: 'none' },
+                borderColor: { 
+                    xs: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', 
+                    md: 'transparent' 
+                },
+            }}
+        >
+            <Toolbar sx={{ gap: 1, justifyContent: 'space-between' }}>
                 {/* Лого */}
-                <IconButton edge="start" color="inherit">
-                    <MusicNoteIcon />
-                </IconButton>
-                <Typography variant="h6" sx={{ display: { xs: 'none', sm: 'block' }, mr: 2 }}>
-                    Musicboard
-                </Typography>
-                
-                {/* Поиск */}
-                <Search>
-                    <SearchIconWrapper>
-                        <SearchIcon />
-                    </SearchIconWrapper>
-                    <StyledInputBase
-                        placeholder="Поиск по трекам, исполнителям..."
-                        value={searchQuery}
-                        onChange={handleSearchChange}
+                <Box
+                    onClick={handleLogoClick}
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.1,
+                        cursor: 'pointer',
+                        textDecoration: 'none',
+                        '&:hover': { opacity: 0.8 },
+                        flexShrink: 0,
+                    }}
+                >
+                    <img
+                        src={logoSrc}
+                        alt="Musicboard"
+                        style={{
+                            height: '40px',
+                            width: '60px',
+                            objectFit: 'contain',
+                            borderRadius: '4px',
+                        }}
+                        onError={(e) => {
+                            console.error('Логотип не загрузился');
+                            e.target.style.display = 'none';
+                        }}
                     />
-                </Search>
-                
+                    <Typography
+                        variant="h6"
+                        sx={{
+                            display: { xs: 'block', sm: 'block' },
+                            fontWeight: 'bold',
+                            color: 'inherit',
+                            fontSize: { xs: '1rem', sm: '1.25rem' },
+                            mt: 0.5,
+                        }}
+                    >
+                        Musicboard
+                    </Typography>
+                </Box>
+
+                {/* Поиск по центру - скрываем на телефонах */}
+                <Box sx={{ 
+                    flex: 1, 
+                    display: { xs: 'none', md: 'flex' }, 
+                    justifyContent: 'center', 
+                    mx: 2 
+                }}>
+                    <SearchBar key={i18n.language} onSearch={() => {}} />
+                </Box>
+
                 {/* Кнопки справа */}
-                <Box sx={{ flexGrow: 1 }} />
-                
-                <IconButton color="inherit" onClick={toggleTheme}>
-                    {theme === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
-                </IconButton>
-                
-                <IconButton color="inherit" onClick={onUploadClick}>
-                    <AddIcon />
-                </IconButton>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                    <Button
+                        variant="text"
+                        onClick={handleLanguageOpen}
+                        endIcon={<ArrowDropDownIcon />}
+                        size="small"
+                        sx={{
+                            textTransform: 'none',
+                            color: 'text.primary',
+                            fontWeight: 'bold',
+                            minWidth: '40px',
+                            fontSize: '1.1rem',
+                        }}
+                    >
+                        {langDisplay}
+                    </Button>
+                    <Menu
+                        anchorEl={languageAnchorEl}
+                        open={open}
+                        onClose={handleLanguageClose}
+                    >
+                        <MenuItem 
+                            onClick={() => changeLanguage('ru')}
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                gap: 2,
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Typography 
+                                    sx={{ 
+                                        fontWeight: currentLang === 'ru' ? 'bold' : 400,
+                                        color: currentLang === 'ru' ? '#E91E63' : 'text.primary',
+                                    }}
+                                >
+                                    RU
+                                </Typography>
+                                {currentLang === 'ru' && (
+                                    <Typography component="span" sx={{ color: '#E91E63', fontSize: '1.2rem' }}>✓</Typography>
+                                )}
+                            </Box>
+                        </MenuItem>
+                        
+                        <MenuItem 
+                            onClick={() => changeLanguage('ua')}
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                gap: 2,
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Typography 
+                                    sx={{ 
+                                        fontWeight: currentLang === 'ua' ? 'bold' : 400,
+                                        color: currentLang === 'ua' ? '#E91E63' : 'text.primary',
+                                    }}
+                                >
+                                    UA
+                                </Typography>
+                                {currentLang === 'ua' && (
+                                    <Typography component="span" sx={{ color: '#E91E63', fontSize: '1.2rem' }}>✓</Typography>
+                                )}
+                            </Box>
+                        </MenuItem>
+                        
+                        <MenuItem 
+                            onClick={() => changeLanguage('en')}
+                            sx={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                gap: 2,
+                            }}
+                        >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <Typography 
+                                    sx={{ 
+                                        fontWeight: currentLang === 'en' ? 'bold' : 400,
+                                        color: currentLang === 'en' ? '#E91E63' : 'text.primary',
+                                    }}
+                                >
+                                    EN
+                                </Typography>
+                                {currentLang === 'en' && (
+                                    <Typography component="span" sx={{ color: '#E91E63', fontSize: '1.2rem' }}>✓</Typography>
+                                )}
+                            </Box>
+                        </MenuItem>
+                    </Menu>
+
+                    <IconButton color="inherit" onClick={toggleTheme}>
+                        {theme === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                    </IconButton>
+
+                    <IconButton color="inherit" onClick={onUploadClick}>
+                        <AddIcon />
+                    </IconButton>
+                </Box>
             </Toolbar>
         </AppBar>
     );

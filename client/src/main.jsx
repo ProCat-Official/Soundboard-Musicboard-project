@@ -5,6 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import App from './App';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { darkTheme, lightTheme } from './theme';
+import './i18n';
 
 // Компонент-обёртка для применения темы MUI
 function AppWithTheme() {
