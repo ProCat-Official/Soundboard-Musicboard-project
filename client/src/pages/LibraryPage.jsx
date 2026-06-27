@@ -1,7 +1,7 @@
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import TrackCard from '../components/Trackcard';
+import TrackCard from '../components/TrackСard';
 
 function LibraryPage({ filteredTracks, onPlay, selectedTrack, isPlaying }) {
     return (
