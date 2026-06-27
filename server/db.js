@@ -10,12 +10,31 @@ const db = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    connectTimeout: 10000,
-    acquireTimeout: 10000,
-    timeout: 10000,
+    connectTimeout: 30000,
+    acquireTimeout: 30000,
+    timeout: 30000,
     ssl: {
-        rejectUnauthorized: false
-    }
+        rejectUnauthorized: false,
+
+        minVersion: 'TLSv1.2'
+    },
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
 });
+
+// тест 
+(async function testConnection() {
+    try {
+        const connection = await db.getConnection();
+        console.log('database connected');
+        connection.release();
+    } catch (error) {
+        console.error('Failed to connect database', error.message);
+        console.error('Check yuor values:');
+        console.error('DB_HOST:', process.env.DB_HOST || env.DB_HOST);
+        console.error('DB_USER:', process.env.DB_USER || env.DB_USER);
+        console.error('DB_NAME:', process.env.DB_NAME || env.DB_NAME);
+    }
+})();
 
 module.exports = db;
