@@ -5,11 +5,11 @@ import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import Box from '@mui/material/Box';
-import TrackCard from './Trackcard';
-import PlayerBar from './Playerbar';
+import TrackCard from './TrackCard';
+import PlayerBar from './PlayerBar';
 import Header from './Header';
 import UploadModal from './UploadModal';
-import Sidebar from './Sidebar';
+import SideBar from './SideBar';
 
 function TrackList() {
     const [tracks, setTracks] = useState([]);
