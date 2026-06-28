@@ -14,7 +14,7 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { useTheme } from '../context/ThemeContext';
-import SearchBar from './SearchBar';
+import SearchBar from './Searchbar';
 
 function Header({ onUploadClick }) {
     const { theme, toggleTheme } = useTheme();

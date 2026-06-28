@@ -13,11 +13,12 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import ShuffleIcon from '@mui/icons-material/Shuffle';
 import CircularProgress from '@mui/material/CircularProgress';
-import EmptyState from '../components/EmptyState';
+import EmptyState from '../components/Emptystate';
 import { useTheme } from '@mui/material/styles';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import API_URL from '../config';
 
 function Artistpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUserId, isAdmin }) {
     const { t, i18n } = useTranslation();   
@@ -51,10 +52,10 @@ function Artistpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUse
     const fetchArtistData = async () => {
         setLoading(true);
         try {
-            const artistResponse = await axios.get(`http://localhost:3000/api/artist/${encodeURIComponent(artistName)}`);
+            const artistResponse = await axios.get(`${API_URL}/api/artist/${encodeURIComponent(artistName)}`);
             const artistData = artistResponse.data;
 
-            const tracksResponse = await axios.get('http://localhost:3000/api/tracks');
+            const tracksResponse = await axios.get(`${API_URL}/api/tracks`);
             const allTracks = tracksResponse.data;
             
             const artistTracks = allTracks.filter(
@@ -64,7 +65,7 @@ function Artistpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUse
             setPopularTracks(artistTracks.slice(0, 10));
 
             try {
-                const bioResponse = await axios.get(`http://localhost:3000/api/artist/${encodeURIComponent(artistName)}/bio?lang=${language}`);
+                const bioResponse = await axios.get(`${API_URL}/api/artist/${encodeURIComponent(artistName)}/bio?lang=${language}`);
                 setBio(bioResponse.data.bio || '');
             } catch (bioError) {
                 setBio('');
@@ -98,7 +99,7 @@ function Artistpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUse
                     name: artistData.name || artistName.replace(/_/g, ' '),
                     tracks: artistTracks.length,
                     cover: artistTracks[0].cover_url,
-                    avatar: `http://localhost:3000${artistData.avatar_url || '/static/artists/default.jpg'}`,
+                    avatar: `${API_URL}${artistData.avatar_url || '/static/artists/default.jpg'}`,
                     user_id: artistTracks[0]?.user_id || null,
                 });
             } else {
@@ -218,7 +219,7 @@ function Artistpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUse
     const handleDeleteArtist = async () => {
         if (!window.confirm(`Вы уверены, что хотите удалить исполнителя "${artist.name}" и все его треки?`)) return;
         try {
-            await axios.delete(`http://localhost:3000/api/artists/${artist.id}`, {
+            await axios.delete(`${API_URL}/api/artists/${artist.id}`, {
                 headers: { 'x-user-id': currentUserId }
             });
             navigate('/');
@@ -565,7 +566,7 @@ function Artistpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUse
                                 {track.cover_url ? (
                                     <Box
                                         component="img"
-                                        src={`http://localhost:3000${track.cover_url}`}
+                                        src={`${API_URL}${track.cover_url}`}
                                         alt={track.title}
                                         sx={{
                                             width: { xs: '46px', md: '40px' },
@@ -795,7 +796,7 @@ function Artistpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUse
                                         <CardMedia
                                             component="img"
                                             height={window.innerWidth < 600 ? '160' : '200'}
-                                            image={`http://localhost:3000${album.cover}`}
+                                            image={`${API_URL}${album.cover}`}
                                             alt={album.name}
                                             sx={{ 
                                                 objectFit: 'cover',

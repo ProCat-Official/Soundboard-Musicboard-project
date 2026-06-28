@@ -24,6 +24,7 @@ import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import SortIcon from '@mui/icons-material/Sort';
 import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import { useTheme } from '@mui/material/styles';
+import API_URL from '../config';
 
 function AlbumList({ onPlay, selectedTrack, isPlaying, setIsPlaying, setCurrentTime }) {
     const { t } = useTranslation();
@@ -100,10 +101,10 @@ function AlbumList({ onPlay, selectedTrack, isPlaying, setIsPlaying, setCurrentT
     const fetchAlbumData = async () => {
         setLoading(true);
         try {
-            const artistResponse = await axios.get(`http://localhost:3000/api/artist/${encodeURIComponent(artistName)}`);
+            const artistResponse = await axios.get(`${API_URL}/api/artist/${encodeURIComponent(artistName)}`);
             const artistData = artistResponse.data;
 
-            const tracksResponse = await axios.get('http://localhost:3000/api/tracks');
+            const tracksResponse = await axios.get(`${API_URL}/api/tracks`);
             const allTracks = tracksResponse.data;
             
             const artistTracks = allTracks.filter(
@@ -131,7 +132,7 @@ function AlbumList({ onPlay, selectedTrack, isPlaying, setIsPlaying, setCurrentT
             setAlbums(albumList);
             setArtist({
                 name: artistData.name || artistName.replace(/_/g, ' '),
-                avatar: `http://localhost:3000${artistData.avatar_url || '/static/artists/default.jpg'}`,
+                avatar: `${API_URL}${artistData.avatar_url || '/static/artists/default.jpg'}`,
             });
         } catch (error) {
             console.error('Ошибка:', error);
@@ -543,7 +544,7 @@ function AlbumList({ onPlay, selectedTrack, isPlaying, setIsPlaying, setCurrentT
                                 >
                                     <Box sx={{ position: 'relative' }}>
                                         <img
-                                            src={album.cover ? `http://localhost:3000${album.cover}` : 'https://via.placeholder.com/300x200?text=No+Cover'}
+                                            src={album.cover ? `${API_URL}${album.cover}` : 'https://via.placeholder.com/300x200?text=No+Cover'}
                                             alt={album.name}
                                             style={{
                                                 width: '100%',
@@ -622,7 +623,7 @@ function AlbumList({ onPlay, selectedTrack, isPlaying, setIsPlaying, setCurrentT
                         >
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 <img
-                                    src={album.cover ? `http://localhost:3000${album.cover}` : 'https://via.placeholder.com/60x60?text=No+Cover'}
+                                    src={album.cover ? `${API_URL}${album.cover}` : 'https://via.placeholder.com/60x60?text=No+Cover'}
                                     alt={album.name}
                                     style={{
                                         width: '150px',

@@ -17,6 +17,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import HistoryIcon from '@mui/icons-material/History';
 import AlbumIcon from '@mui/icons-material/Album';   
 import MusicNoteIcon from '@mui/icons-material/MusicNote'; 
+import API_URL from '../config';
 import axios from 'axios';
 
 function SearchBar({ onSearch }) {
@@ -76,7 +77,7 @@ function SearchBar({ onSearch }) {
             }
 
             try {
-                const response = await axios.get(`http://localhost:3000/api/tracks/search?query=${encodeURIComponent(query.trim())}`);
+                const response = await axios.get(`${API_URL}/api/tracks/search?query=${encodeURIComponent(query.trim())}`);
                 const tracksData = response.data;
 
                 const combinedResults = [];
@@ -86,7 +87,7 @@ function SearchBar({ onSearch }) {
                 for (const name of artistNames) {
                     let avatarUrl = '';
                     try {
-                        const artistRes = await axios.get(`http://localhost:3000/api/artist/${encodeURIComponent(name)}`);
+                        const artistRes = await axios.get(`${API_URL}/api/artist/${encodeURIComponent(name)}`);
                         avatarUrl = artistRes.data.avatar_url || '';
                     } catch (e) {
                         avatarUrl = `/static/artists/${name.toLowerCase().replace(/ /g, '_')}.jpg`;
@@ -315,7 +316,7 @@ function SearchBar({ onSearch }) {
                                     if (item.type === 'artist') {
                                         iconContent = (
                                             <img
-                                                src={item.avatar ? `http://localhost:3000${item.avatar}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=621d3e&color=fff&size=32`}
+                                                src={item.avatar ? `${API_URL}${item.avatar}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=621d3e&color=fff&size=32`}
                                                 alt={item.name}
                                                 style={{
                                                     width: '32px',
@@ -333,7 +334,7 @@ function SearchBar({ onSearch }) {
                                         if (coverUrl) {
                                             iconContent = (
                                                 <img
-                                                    src={`http://localhost:3000${coverUrl}`}
+                                                    src={`${API_URL}${coverUrl}`}
                                                     alt={item.name}
                                                     style={{
                                                         width: '32px',

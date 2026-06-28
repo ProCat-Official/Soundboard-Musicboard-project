@@ -15,6 +15,7 @@ import { useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 import Modal from '@mui/material/Modal';
 import CloseIcon from '@mui/icons-material/Close';
+import API_URL from '../config';
 
 function PlayerBar({ 
     track, 
@@ -67,7 +68,7 @@ function PlayerBar({
     useEffect(() => {
         if (track && audioRef.current) {
             const audio = audioRef.current;
-            audio.src = `http://localhost:3000/api/stream/${track.id}`;
+            audio.src = `${API_URL}/api/stream/${track.id}`;
             audio.load();
             audio.currentTime = currentTime || 0;
             
@@ -305,7 +306,7 @@ function PlayerBar({
     {/* Обложка */}
     <Box
         component="img"
-        src={track.cover_url ? `http://localhost:3000${track.cover_url}` : 'https://via.placeholder.com/48'}
+        src={track.cover_url ? `${API_URL}${track.cover_url}` : 'https://via.placeholder.com/48'}
         sx={{
             width: 48,
             height: 48,
@@ -428,7 +429,7 @@ function PlayerBar({
         }}>
             <Box
                 component="img"
-                src={track.cover_url ? `http://localhost:3000${track.cover_url}` : 'https://via.placeholder.com/50'}
+                src={track.cover_url ? `${API_URL}${track.cover_url}` : 'https://via.placeholder.com/50'}
                 alt="cover"
                 onClick={() => setFullscreenOpen(true)}
                 sx={{
@@ -681,7 +682,7 @@ function PlayerBar({
                             py: 4,
                         }}>
                             <img
-                                src={track.cover_url ? `http://localhost:3000${track.cover_url}` : 'https://via.placeholder.com/400x400?text=No+Cover'}
+                                src={track.cover_url ? `${API_URL}${track.cover_url}` : 'https://via.placeholder.com/400x400?text=No+Cover'}
                                 alt={track.title}
                                 style={{
                                     width: '100%',

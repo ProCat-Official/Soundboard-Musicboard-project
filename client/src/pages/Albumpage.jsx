@@ -18,6 +18,7 @@ import { useTheme } from '@mui/material/styles';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import API_URL from '../config';
 
 function Albumpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUserId, isAdmin }) {
     const { t } = useTranslation();
@@ -40,7 +41,7 @@ function Albumpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUser
     const fetchAlbumData = async () => {
         setLoading(true);
         try {
-            const response = await axios.get('http://localhost:3000/api/tracks');
+            const response = await axios.get(`${API_URL}/api/tracks`);
             const allTracks = response.data;
             
             const albumTracks = allTracks.filter(
@@ -52,7 +53,7 @@ function Albumpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUser
             if (albumTracks.length > 0) {
                 let avatarUrl = '';
                 try {
-                    const artistResponse = await axios.get(`http://localhost:3000/api/artist/${encodeURIComponent(albumTracks[0].artist)}`);
+                    const artistResponse = await axios.get(`${API_URL}/api/artist/${encodeURIComponent(albumTracks[0].artist)}`);
                     avatarUrl = artistResponse.data.avatar_url || '';
                 } catch (e) {
                     console.warn('Аватарка не найдена');
@@ -98,7 +99,7 @@ function Albumpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUser
     const handleDeleteAlbum = async () => {
         if (!window.confirm(`Вы уверены, что хотите удалить альбом "${album.name}" и все его треки?`)) return;
         try {
-            await axios.delete(`http://localhost:3000/api/albums/${album.id}`, {
+            await axios.delete(`${API_URL}/api/albums/${album.id}`, {
                 headers: { 'x-user-id': currentUserId }
             });
             if (album.artist) {
@@ -259,7 +260,7 @@ function Albumpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUser
                 {/* Обложка - адаптивный размер */}
                 <Box
                     component="img"
-                    src={album.cover ? `http://localhost:3000${album.cover}` : 'https://via.placeholder.com/300x300?text=No+Cover'}
+                    src={album.cover ? `${API_URL}${album.cover}` : 'https://via.placeholder.com/300x300?text=No+Cover'}
                     alt={album.name}
                     sx={{
                         width: { xs: '180px', md: '300px' },
@@ -316,7 +317,7 @@ function Albumpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUser
                     >
                         {album.artistAvatar && (
                             <img
-                                src={`http://localhost:3000${album.artistAvatar}`}
+                                src={`${API_URL}${album.artistAvatar}`}
                                 alt={album.artist}
                                 style={{
                                     width: '25px',
@@ -662,7 +663,7 @@ function Albumpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUser
                             <CardMedia
                                 component="img"
                                 height={window.innerWidth < 600 ? 150 : 200}
-                                image={otherAlbum.cover ? `http://localhost:3000${otherAlbum.cover}` : 'https://via.placeholder.com/200x200?text=No+Cover'}
+                                image={otherAlbum.cover ? `${API_URL}${otherAlbum.cover}` : 'https://via.placeholder.com/200x200?text=No+Cover'}
                                 alt={otherAlbum.name}
                                 sx={{ 
                                     objectFit: 'cover',

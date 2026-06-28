@@ -23,6 +23,7 @@ import AlbumIcon from '@mui/icons-material/Album';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
 import axios from 'axios';
+import API_URL from '../config';
 import { useTheme } from '../context/ThemeContext';
 
 function BottomNav({ tracks, onPlay, selectedTrack, isPlaying, setIsPlaying }) {
@@ -46,7 +47,7 @@ function BottomNav({ tracks, onPlay, selectedTrack, isPlaying, setIsPlaying }) {
 
     const fetchArtistsData = async () => {
         try {
-            const response = await axios.get('http://localhost:3000/api/artists');
+            const response = await axios.get(`${API_URL}/api/artists`);
             const allArtists = response.data;
             const artistsWithData = allArtists
                 .map(artist => ({
@@ -61,7 +62,7 @@ function BottomNav({ tracks, onPlay, selectedTrack, isPlaying, setIsPlaying }) {
             const fallbackData = await Promise.all(artists.map(async (artist) => {
                 let avatarUrl = '';
                 try {
-                    const artistRes = await axios.get(`http://localhost:3000/api/artist/${encodeURIComponent(artist)}`);
+                    const artistRes = await axios.get(`${API_URL}/api/artist/${encodeURIComponent(artist)}`);
                     avatarUrl = artistRes.data.avatar_url || '';
                 } catch (e) {
                     avatarUrl = `/static/artists/${artist.toLowerCase().replace(/ /g, '_')}.jpg`;
@@ -87,7 +88,7 @@ function BottomNav({ tracks, onPlay, selectedTrack, isPlaying, setIsPlaying }) {
         }
 
         try {
-            const response = await axios.get(`http://localhost:3000/api/tracks/search?query=${encodeURIComponent(value.trim())}`);
+            const response = await axios.get(`${API_URL}/api/tracks/search?query=${encodeURIComponent(value.trim())}`);
             const tracksData = response.data;
 
             const combinedResults = [];
@@ -97,7 +98,7 @@ function BottomNav({ tracks, onPlay, selectedTrack, isPlaying, setIsPlaying }) {
             for (const name of artistNames) {
                 let avatarUrl = '';
                 try {
-                    const artistRes = await axios.get(`http://localhost:3000/api/artist/${encodeURIComponent(name)}`);
+                    const artistRes = await axios.get(`${API_URL}/api/artist/${encodeURIComponent(name)}`);
                     avatarUrl = artistRes.data.avatar_url || '';
                 } catch (e) {
                     avatarUrl = `/static/artists/${name.toLowerCase().replace(/ /g, '_')}.jpg`;
@@ -213,7 +214,7 @@ function BottomNav({ tracks, onPlay, selectedTrack, isPlaying, setIsPlaying }) {
         if (artist.avatar_url) {
             return artist.avatar_url.startsWith('http') 
                 ? artist.avatar_url 
-                : `http://localhost:3000${artist.avatar_url}`;
+                : `${API_URL}${artist.avatar_url}`;
         }
         return `/static/artists/${artist.name.toLowerCase().replace(/ /g, '_')}.jpg`;
     };
@@ -611,7 +612,7 @@ function BottomNav({ tracks, onPlay, selectedTrack, isPlaying, setIsPlaying }) {
                                 <ListItemIcon>
                                     {item.type === 'artist' ? (
                                         <img
-                                            src={item.avatar ? `http://localhost:3000${item.avatar}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=621d3e&color=fff&size=32`}
+                                            src={item.avatar ? `${API_URL}${item.avatar}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=621d3e&color=fff&size=32`}
                                             alt={item.name}
                                             style={{
                                                 width: '32px',
@@ -626,7 +627,7 @@ function BottomNav({ tracks, onPlay, selectedTrack, isPlaying, setIsPlaying }) {
                                     ) : (
                                         item.cover ? (
                                             <img
-                                                src={`http://localhost:3000${item.cover}`}
+                                                src={`${API_URL}${item.cover}`}
                                                 alt={item.name}
                                                 style={{
                                                     width: '32px',

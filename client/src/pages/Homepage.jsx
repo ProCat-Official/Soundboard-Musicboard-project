@@ -10,7 +10,8 @@ import { useTheme } from '@mui/material/styles';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
 import AlbumIcon from '@mui/icons-material/Album';
-import CardItem from '../components/CardItem';
+import CardItem from '../components/Carditem';
+import API_URL from '../config';
 
 // Лимит карточек в каждой секции
 const SECTION_LIMIT = 9;
@@ -113,12 +114,12 @@ function Homepage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUserI
         setLoading(true);
         try {
             const [rtRes, raRes, rArRes, ptRes, paRes, pArRes] = await Promise.all([
-                axios.get('http://localhost:3000/api/tracks/recent-user'),
-                axios.get('http://localhost:3000/api/albums/recent-user'),
-                axios.get('http://localhost:3000/api/artists/recent-user'),
-                axios.get('http://localhost:3000/api/tracks/popular'),
-                axios.get('http://localhost:3000/api/albums/popular'),
-                axios.get('http://localhost:3000/api/artists/popular'),
+                axios.get(`${API_URL}/api/tracks/recent-user`),
+                axios.get(`${API_URL}/api/albums/recent-user`),
+                axios.get(`${API_URL}/api/artists/recent-user`),
+                axios.get(`${API_URL}/api/tracks/popular`),
+                axios.get(`${API_URL}/api/albums/popular`),
+                axios.get(`${API_URL}/api/artists/popular`),
             ]);
             setRecentTracks(rtRes.data || []);
             setRecentAlbums(raRes.data || []);
@@ -146,7 +147,7 @@ function Homepage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUserI
     const handleDeleteTrack = async (track) => {
         if (!window.confirm(t('delete.confirmTrack', { title: track.title }))) return;
         try {
-            await axios.delete(`http://localhost:3000/api/tracks/${track.id}`, {
+            await axios.delete(`${API_URL}/api/tracks/${track.id}`, {
                 headers: { 'x-user-id': currentUserId }
             });
             await fetchData();
@@ -170,7 +171,7 @@ function Homepage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUserI
     const handleDeleteAlbum = async (album) => {
         if (!window.confirm(t('delete.confirmAlbum', { title: album.title }))) return;
         try {
-            await axios.delete(`http://localhost:3000/api/albums/${album.id}`, {
+            await axios.delete(`${API_URL}/api/albums/${album.id}`, {
                 headers: { 'x-user-id': currentUserId }
             });
             await fetchData();
@@ -184,7 +185,7 @@ function Homepage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUserI
     const handleDeleteArtist = async (artist) => {
         if (!window.confirm(t('delete.confirmArtist', { name: artist.name }))) return;
         try {
-            await axios.delete(`http://localhost:3000/api/artists/${artist.id}`, {
+            await axios.delete(`${API_URL}/api/artists/${artist.id}`, {
                 headers: { 'x-user-id': currentUserId }
             });
             await fetchData();
@@ -219,7 +220,7 @@ function Homepage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUserI
                     id={track.id}
                     title={track.title}
                     subtitle={subtitle}
-                    image={track.cover_url ? `http://localhost:3000${track.cover_url}` : null}
+                    image={track.cover_url ? `${API_URL}${track.cover_url}` : null}
                     type="track"
                     isPlaying={isPlaying}
                     isActive={isActive}
@@ -257,7 +258,7 @@ function Homepage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUserI
                     id={album.id}
                     title={album.title}
                     subtitle={subtitle}
-                    image={album.cover_url ? `http://localhost:3000${album.cover_url}` : null}
+                    image={album.cover_url ? `${API_URL}${album.cover_url}` : null}
                     type="album"
                     isPlaying={false}
                     isActive={false}
@@ -290,7 +291,7 @@ function Homepage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUserI
                     id={artist.id}
                     title={artist.name}
                     subtitle={subtitle}
-                    image={artist.avatar_url ? `http://localhost:3000${artist.avatar_url}` : null}
+                    image={artist.avatar_url ? `${API_URL}${artist.avatar_url}` : null}
                     type="artist"
                     isPlaying={false}
                     isActive={false}

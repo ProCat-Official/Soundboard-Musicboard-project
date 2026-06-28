@@ -14,7 +14,8 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import PersonIcon from '@mui/icons-material/Person';
 import AlbumIcon from '@mui/icons-material/Album';
-import CardItem from '../components/CardItem';
+import CardItem from '../components/Carditem';
+import API_URL from '../config';
 
 const SECTION_LIMIT = 9;
 
@@ -85,15 +86,15 @@ function PopularPage({ onPlay, selectedTrack, isPlaying, setIsPlaying }) {
     const fetchPopular = async () => {
         setLoading(true);
         try {
-            const tracksResponse = await axios.get('http://localhost:3000/api/tracks/popular');
+            const tracksResponse = await axios.get(`${API_URL}/api/tracks/popular`);
             const tracksData = tracksResponse.data || [];
             setTracks(tracksData);
 
-            const albumsResponse = await axios.get('http://localhost:3000/api/albums/popular');
+            const albumsResponse = await axios.get(`${API_URL}/api/albums/popular`);
             const albumsData = albumsResponse.data || [];
             setAlbums(albumsData);
 
-            const artistsResponse = await axios.get('http://localhost:3000/api/artists/popular');
+            const artistsResponse = await axios.get(`${API_URL}/api/artists/popular`);
             const artistsData = artistsResponse.data || [];
             setArtists(artistsData);
 
@@ -101,7 +102,7 @@ function PopularPage({ onPlay, selectedTrack, isPlaying, setIsPlaying }) {
             console.error('Ошибка загрузки популярного:', error);
             
             try {
-                const tracksResponse = await axios.get('http://localhost:3000/api/tracks/popular');
+                const tracksResponse = await axios.get(`${API_URL}/api/tracks/popular`);
                 const tracksData = tracksResponse.data || [];
                 setTracks(tracksData);
 
@@ -191,7 +192,7 @@ function PopularPage({ onPlay, selectedTrack, isPlaying, setIsPlaying }) {
                     id={track.id}
                     title={track.title}
                     subtitle={subtitle}
-                    image={track.cover_url ? `http://localhost:3000${track.cover_url}` : null}
+                    image={track.cover_url ? `${API_URL}${track.cover_url}` : null}
                     type="track"
                     isPlaying={isPlaying}
                     isActive={isActive}
@@ -223,7 +224,7 @@ function PopularPage({ onPlay, selectedTrack, isPlaying, setIsPlaying }) {
                     id={album.id}
                     title={album.title}
                     subtitle={subtitle}
-                    image={album.cover_url ? `http://localhost:3000${album.cover_url}` : null}
+                    image={album.cover_url ? `${API_URL}${album.cover_url}` : null}
                     type="album"
                     isPlaying={false}
                     isActive={false}
@@ -250,7 +251,7 @@ function PopularPage({ onPlay, selectedTrack, isPlaying, setIsPlaying }) {
                     id={artist.id}
                     title={artist.name}
                     subtitle={subtitle}
-                    image={artist.avatar_url ? `http://localhost:3000${artist.avatar_url}` : null}
+                    image={artist.avatar_url ? `${API_URL}${artist.avatar_url}` : null}
                     type="artist"
                     isPlaying={false}
                     isActive={false}

@@ -18,6 +18,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import VolumeUpIcon from '@mui/icons-material/VolumeUp';
 import axios from 'axios';
+import API_URL from '../config'
 
 function Sidebar({ tracks, isOpen, onToggle, onPlay, selectedTrack, isPlaying, setIsPlaying }) {
     const { t } = useTranslation();
@@ -31,7 +32,7 @@ function Sidebar({ tracks, isOpen, onToggle, onPlay, selectedTrack, isPlaying, s
 
     const fetchArtistsData = async () => {
         try {
-            const response = await axios.get('http://localhost:3000/api/artists');
+            const response = await axios.get(`${API_URL}/api/artists`);
             const allArtists = response.data;
             const artistsWithData = allArtists
                 .map(artist => ({
@@ -46,7 +47,7 @@ function Sidebar({ tracks, isOpen, onToggle, onPlay, selectedTrack, isPlaying, s
             const fallbackData = await Promise.all(artists.map(async (artist) => {
                 let avatarUrl = '';
                 try {
-                    const artistRes = await axios.get(`http://localhost:3000/api/artist/${encodeURIComponent(artist)}`);
+                    const artistRes = await axios.get(`${API_URL}/api/artist/${encodeURIComponent(artist)}`);
                     avatarUrl = artistRes.data.avatar_url || '';
                 } catch (e) {
                     avatarUrl = `/static/artists/${artist.toLowerCase().replace(/ /g, '_')}.jpg`;
@@ -196,7 +197,7 @@ function Sidebar({ tracks, isOpen, onToggle, onPlay, selectedTrack, isPlaying, s
                     {artistsData.slice(0, isOpen ? 15 : 5).map((artist) => {
                         const isPlayingNow = isArtistPlaying(artist);
                         const avatarUrl = artist.avatar_url
-                            ? (artist.avatar_url.startsWith('http') ? artist.avatar_url : `http://localhost:3000${artist.avatar_url}`)
+                            ? (artist.avatar_url.startsWith('http') ? artist.avatar_url : `${API_URL}${artist.avatar_url}`)
                             : `/static/artists/${artist.name.toLowerCase().replace(/ /g, '_')}.jpg`;
 
                         return (

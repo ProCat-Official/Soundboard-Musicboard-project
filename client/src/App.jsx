@@ -10,7 +10,7 @@ import PlayerBar from './components/Playerbar';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import UploadModal from './components/UploadModal';
-import BottomNav from './components/BottomNav';
+import BottomNav from './components/Bottomnav';
 import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -18,6 +18,7 @@ import UnderConstruction from './pages/UnderConstruction';
 import AlbumList from './pages/Albumlist';
 import NewReleasesPage from './pages/NewReleasesPage';
 import Popularpage from './pages/Popularpage';
+import API_URL from './config';
 import i18n from './i18n';
 
 function App() {
@@ -77,7 +78,7 @@ function App() {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const response = await axios.get('http://localhost:3000/api/user', {
+                const response = await axios.get(`${API_URL}/api/user`, {
                     headers: { 'x-user-id': currentUserId }
                 });
                 setIsAdmin(response.data.is_admin === 1);
@@ -97,7 +98,7 @@ function App() {
     const fetchTracks = async () => {
         setLoading(true);
         try {
-            const response = await axios.get('http://localhost:3000/api/tracks');
+            const response = await axios.get(`${API_URL}/api/tracks`);
             setTracks(response.data);
             setFilteredTracks(response.data);
         } catch (error) {
@@ -114,7 +115,7 @@ function App() {
             if (query && query.trim()) params.append('query', query.trim());
             if (genre && genre !== 'all') params.append('genre', genre);
             
-            const response = await axios.get(`http://localhost:3000/api/tracks/search?${params.toString()}`);
+            const response = await axios.get(`${API_URL}/api/tracks/search?${params.toString()}`);
             setFilteredTracks(response.data);
         } catch (error) {
             console.error('Ошибка поиска:', error);
@@ -190,7 +191,7 @@ function App() {
     // ===== ЗАГРУЗКА ТРЕКА =====
     const handleUpload = async (formData, userId) => {
         try {
-            const response = await axios.post('http://localhost:3000/api/tracks', formData, {
+            const response = await axios.post(`${API_URL}/api/tracks`, formData, {
                 headers: { 
                     'Content-Type': 'multipart/form-data',
                     'x-user-id': userId || currentUserId

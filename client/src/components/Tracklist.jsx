@@ -10,6 +10,7 @@ import PlayerBar from './Playerbar';
 import Header from './Header';
 import UploadModal from './UploadModal';
 import Sidebar from './Sidebar';
+import API_URL from '../config'
 
 function TrackList() {
     const [tracks, setTracks] = useState([]);
@@ -43,7 +44,7 @@ function TrackList() {
     const fetchTracks = async () => {
         setLoading(true);
         try {
-            const response = await axios.get('http://localhost:3000/api/tracks');
+            const response = await axios.get(`${API_URL}/api/tracks`);
             setTracks(response.data);
             setFilteredTracks(response.data);
         } catch (error) {
@@ -55,7 +56,7 @@ function TrackList() {
 
     const fetchGenres = async () => {
         try {
-            const response = await axios.get('http://localhost:3000/api/genres');
+            const response = await axios.get(`${API_URL}/api/genres`);
             setGenres(response.data);
         } catch (error) {
             console.error('Ошибка загрузки жанров:', error);
@@ -68,7 +69,7 @@ function TrackList() {
             if (searchQuery.trim()) params.append('query', searchQuery.trim());
             if (selectedGenre !== 'all') params.append('genre', selectedGenre);
             
-            const response = await axios.get(`http://localhost:3000/api/tracks/search?${params.toString()}`);
+            const response = await axios.get(`${API_URL}/api/tracks/search?${params.toString()}`);
             setFilteredTracks(response.data);
         } catch (error) {
             console.error('Ошибка поиска:', error);
@@ -99,7 +100,7 @@ function TrackList() {
 
     const handleUpload = async (formData) => {
         try {
-            await axios.post('http://localhost:3000/api/tracks', formData, {
+            await axios.post(`${API_URL}/api/tracks`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             fetchTracks();
