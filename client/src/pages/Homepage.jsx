@@ -220,7 +220,7 @@ function Homepage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUserI
                     id={track.id}
                     title={track.title}
                     subtitle={subtitle}
-                    image={track.cover_url ? `${API_URL}${track.cover_url}` : null}
+                    image={track.cover_url || null}
                     type="track"
                     isPlaying={isPlaying}
                     isActive={isActive}
