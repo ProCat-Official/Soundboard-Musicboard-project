@@ -132,7 +132,7 @@ function AlbumList({ onPlay, selectedTrack, isPlaying, setIsPlaying, setCurrentT
             setAlbums(albumList);
             setArtist({
                 name: artistData.name || artistName.replace(/_/g, ' '),
-                avatar: `${API_URL}${artistData.avatar_url || '/static/artists/default.jpg'}`,
+                avatar: artistData.avatar_url || '/static/artists/default.jpg',
             });
         } catch (error) {
             console.error('Ошибка:', error);
@@ -544,7 +544,7 @@ function AlbumList({ onPlay, selectedTrack, isPlaying, setIsPlaying, setCurrentT
                                 >
                                     <Box sx={{ position: 'relative' }}>
                                         <img
-                                            src={album.cover ? `${API_URL}${album.cover}` : 'https://via.placeholder.com/300x200?text=No+Cover'}
+                                            src={album.cover || 'https://via.placeholder.com/300x200?text=No+Cover'}
                                             alt={album.name}
                                             style={{
                                                 width: '100%',
@@ -623,7 +623,7 @@ function AlbumList({ onPlay, selectedTrack, isPlaying, setIsPlaying, setCurrentT
                         >
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                 <img
-                                    src={album.cover ? `${API_URL}${album.cover}` : 'https://via.placeholder.com/60x60?text=No+Cover'}
+                                    src={album.cover || 'https://via.placeholder.com/60x60?text=No+Cover'}
                                     alt={album.name}
                                     style={{
                                         width: '150px',
