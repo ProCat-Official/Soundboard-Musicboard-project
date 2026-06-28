@@ -332,7 +332,7 @@ function Homepage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUserI
                 overflow: { xs: 'visible', md: 'hidden' },
                 boxShadow: { xs: 0, md: 3 },
                 mx: { xs: -2, sm: -3, md: -5 },
-                my: { xs: 3, md: -3 },
+                my: { xs: 3, md: 5 },
                 width: { xs: '100vw', md: '104%' },
                 maxWidth: { xs: '100vw', md: 'none' },
                 position: { xs: 'relative', md: 'static' },

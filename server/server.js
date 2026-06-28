@@ -7,32 +7,30 @@ const path = require("path")
 const fs = require("fs")
 const db = require("./db.js")
 const mm = require('music-metadata');
+const { createClient } = require('@supabase/supabase-js');
+
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
+);
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 const MIN_YEAR = 1700;
 const MAX_YEAR = new Date().getFullYear();
 
-// ===== КОДЫ ОШИБОК (вместо текста) =====
 const ERROR_CODES = {
-    // Upload
     AUDIO_REQUIRED: 'AUDIO_REQUIRED',
     FILE_TOO_LARGE: 'FILE_TOO_LARGE',
     IMAGE_TOO_LARGE: 'IMAGE_TOO_LARGE',
     INVALID_YEAR: 'INVALID_YEAR',
     TEXT_TOO_LONG: 'TEXT_TOO_LONG',
-    
-    // Not found
     USER_NOT_FOUND: 'USER_NOT_FOUND',
     TRACK_NOT_FOUND: 'TRACK_NOT_FOUND',
     FILE_NOT_FOUND: 'FILE_NOT_FOUND',
     ARTIST_NOT_FOUND: 'ARTIST_NOT_FOUND',
     ALBUM_NOT_FOUND: 'ALBUM_NOT_FOUND',
-    
-    // Auth
     UNAUTHORIZED: 'UNAUTHORIZED',
-    
-    // Permissions
     NO_PERMISSION_DELETE_TRACK: 'NO_PERMISSION_DELETE_TRACK',
     NO_PERMISSION_DELETE_OFFICIAL_TRACK: 'NO_PERMISSION_DELETE_OFFICIAL_TRACK',
     NO_PERMISSION_DELETE_ARTIST: 'NO_PERMISSION_DELETE_ARTIST',
@@ -41,8 +39,6 @@ const ERROR_CODES = {
     NO_PERMISSION_EDIT_ALBUM: 'NO_PERMISSION_EDIT_ALBUM',
     NO_PERMISSION_AVATAR: 'NO_PERMISSION_AVATAR',
     AVATAR_FILE_REQUIRED: 'AVATAR_FILE_REQUIRED',
-    
-    // Success
     SUCCESS_TRACK_UPLOADED: 'SUCCESS_TRACK_UPLOADED',
     SUCCESS_TRACK_DELETED: 'SUCCESS_TRACK_DELETED',
     SUCCESS_ARTIST_DELETED: 'SUCCESS_ARTIST_DELETED',
@@ -87,44 +83,23 @@ async function getNextUsername() {
     return `user${nextNumber}`;
 }
 
-// ===== 1. СОЗДАЁМ APP =====
 const app = express();
 
-// ===== 2. НАСТРОЙКИ =====
 app.use(cors({
     origin: "*",
     allowedHeaders: "*",
     methods: "*"
 }))
 
-app.use("/static", express.static(path.join(__dirname, "static")))
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))
 
-// ===== 3. НАСТРОЙКА MULTER =====
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        if (file.fieldname === 'audio') {
-            cb(null, 'static/songs/')
-        } else if (file.fieldname === 'cover') {
-            cb(null, 'static/covers/')
-        } else if (file.fieldname === 'avatar') {
-            const dir = 'static/avatars/';
-            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-            cb(null, dir);
-        }
-    },
-    filename: function (req, file, cb) {
-        const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9)
-        cb(null, uniqueName + path.extname(file.originalname))
-    }
-})
+const storage = multer.memoryStorage();
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: MAX_FILE_SIZE }
+});
 
-const upload = multer({ storage: storage })
-
-// ===== 4. МАРШРУТЫ =====
-
-// Проверочный
 app.get("/", async (req, res) => {
     try {
         let [result, _] = await db.query("SHOW TABLES")
@@ -135,7 +110,6 @@ app.get("/", async (req, res) => {
     }
 })
 
-// Получить все треки
 app.get('/api/tracks', async (req, res) => {
     try {
         const query = `
@@ -168,7 +142,27 @@ app.get('/api/tracks', async (req, res) => {
     }
 })
 
-// ===== ЗАГРУЗКА ТРЕКА =====
+async function uploadToSupabase(file, folder, contentType) {
+    if (!file) return null;
+    const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+    const { error } = await supabase
+        .storage
+        .from(process.env.SUPABASE_BUCKET)
+        .upload(`${folder}/${fileName}`, file.buffer, {
+            contentType: contentType,
+            cacheControl: '3600'
+        });
+    if (error) {
+        console.error(`Ошибка загрузки в ${folder}:`, error);
+        return null;
+    }
+    const { data } = supabase
+        .storage
+        .from(process.env.SUPABASE_BUCKET)
+        .getPublicUrl(`${folder}/${fileName}`);
+    return data.publicUrl;
+}
+
 app.post('/api/tracks', upload.fields([
     { name: 'audio', maxCount: 1 },
     { name: 'cover', maxCount: 1 },
@@ -185,17 +179,14 @@ app.post('/api/tracks', upload.fields([
         }
         
         if (audioFile.size > MAX_FILE_SIZE) {
-            if (fs.existsSync(audioFile.path)) fs.unlinkSync(audioFile.path);
             return res.status(400).json({ error: ERROR_CODES.FILE_TOO_LARGE });
         }
         
         if (coverFile && coverFile.size > MAX_IMAGE_SIZE) {
-            if (fs.existsSync(coverFile.path)) fs.unlinkSync(coverFile.path);
             return res.status(400).json({ error: ERROR_CODES.IMAGE_TOO_LARGE });
         }
         
         if (avatarFile && avatarFile.size > MAX_IMAGE_SIZE) {
-            if (fs.existsSync(avatarFile.path)) fs.unlinkSync(avatarFile.path);
             return res.status(400).json({ error: ERROR_CODES.IMAGE_TOO_LARGE });
         }
 
@@ -216,19 +207,15 @@ app.post('/api/tracks', upload.fields([
         if (album && album.length > MAX_TEXT_LENGTH) {
             return res.status(400).json({ error: ERROR_CODES.TEXT_TOO_LONG });
         }
-                
-        const fileUrl = `/static/songs/${audioFile.filename}`;
-        const coverUrl = coverFile ? `/static/covers/${coverFile.filename}` : null;
         
         let duration = null;
         try {
-            const metadata = await mm.parseFile(audioFile.path);
+            const metadata = await mm.parseBuffer(audioFile.buffer, audioFile.mimetype);
             duration = Math.floor(metadata.format.duration);
         } catch (error) {
             console.warn('Не удалось получить длительность:', error.message);
         }
         
-        // ===== ПОЛЬЗОВАТЕЛЬ =====
         let userId;
         let username;
         const providedUserId = req.headers['x-user-id'];
@@ -253,7 +240,6 @@ app.post('/api/tracks', upload.fields([
 
         console.log(`📝 Пользователь: ${username} (ID: ${userId})`);
         
-        // ===== ИСПОЛНИТЕЛЬ =====
         let artistId = null;
         let artistName = artist.trim();
         
@@ -266,24 +252,28 @@ app.post('/api/tracks', upload.fields([
             artistId = result.insertId;
         }
         
-        // ===== АВАТАРКА =====
+        let avatarUrl = null;
         const [artistCheck] = await db.query('SELECT avatar_url FROM artists WHERE id = ?', [artistId]);
-        
         if (!artistCheck[0].avatar_url && avatarFile) {
-            const avatarUrl = `/static/avatars/${avatarFile.filename}`;
-            await db.query('UPDATE artists SET avatar_url = ? WHERE id = ?', [avatarUrl, artistId]);
-            console.log('✅ Аватарка добавлена исполнителю:', artistName);
-        } else if (avatarFile) {
-            if (fs.existsSync(avatarFile.path)) {
-                fs.unlinkSync(avatarFile.path);
-                console.log('🗑️ Аватарка удалена (у исполнителя уже есть):', avatarFile.filename);
+            avatarUrl = await uploadToSupabase(avatarFile, 'avatars', avatarFile.mimetype);
+            if (avatarUrl) {
+                await db.query('UPDATE artists SET avatar_url = ? WHERE id = ?', [avatarUrl, artistId]);
+                console.log('✅ Аватарка добавлена исполнителю:', artistName);
             }
         }
         
-        // ===== АЛЬБОМ =====
         let albumId = null;
         let albumName = album ? album.trim() : null;
-        let finalCoverUrl = coverUrl;
+        let finalCoverUrl = null;
+        
+        const audioUrl = await uploadToSupabase(audioFile, 'songs', audioFile.mimetype);
+        if (!audioUrl) {
+            return res.status(500).json({ error: 'Ошибка загрузки аудиофайла' });
+        }
+        
+        if (coverFile) {
+            finalCoverUrl = await uploadToSupabase(coverFile, 'covers', coverFile.mimetype);
+        }
         
         if (albumName) {
             const [existingAlbum] = await db.query(
@@ -293,32 +283,20 @@ app.post('/api/tracks', upload.fields([
             if (existingAlbum.length > 0) {
                 albumId = existingAlbum[0].id;
                 albumName = existingAlbum[0].title;
-                
                 if (existingAlbum[0].cover_url) {
                     finalCoverUrl = existingAlbum[0].cover_url;
-                    if (coverFile && fs.existsSync(coverFile.path)) {
-                        fs.unlinkSync(coverFile.path);
-                        console.log('🗑️ Обложка удалена (у альбома уже есть):', coverFile.filename);
-                    }
-                } else {
-                    if (coverFile) {
-                        finalCoverUrl = coverUrl;
-                        await db.query('UPDATE albums SET cover_url = ? WHERE id = ?', [coverUrl, albumId]);
-                        console.log('✅ Обложка добавлена к альбому:', albumName);
-                    }
+                } else if (finalCoverUrl) {
+                    await db.query('UPDATE albums SET cover_url = ? WHERE id = ?', [finalCoverUrl, albumId]);
                 }
             } else {
                 const [result] = await db.query(
                     'INSERT INTO albums (title, artist_id, cover_url, release_year, is_single) VALUES (?, ?, ?, ?, 0)',
-                    [albumName, artistId, coverUrl, release_year || null]
+                    [albumName, artistId, finalCoverUrl, release_year || null]
                 );
                 albumId = result.insertId;
-                finalCoverUrl = coverUrl;
-                console.log('✅ Создан новый альбом:', albumName);
             }
         }
         
-        // ===== ДОБАВЛЯЕМ ТРЕК =====
         const query = `INSERT INTO tracks 
             (title, artist_id, album_id, genre, release_year, duration, file_url, cover_url, is_official, user_id) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`;
@@ -330,7 +308,7 @@ app.post('/api/tracks', upload.fields([
             genre || null, 
             release_year || null, 
             duration, 
-            fileUrl,
+            audioUrl,
             finalCoverUrl,
             userId
         ]);
@@ -338,8 +316,8 @@ app.post('/api/tracks', upload.fields([
         res.status(201).json({ 
             message: ERROR_CODES.SUCCESS_TRACK_UPLOADED, 
             id: result.insertId,
-            fileUrl: fileUrl,
-            coverUrl: coverUrl,
+            fileUrl: audioUrl,
+            coverUrl: finalCoverUrl,
             duration: duration,
             artist: artistName,
             album: albumName,
@@ -352,7 +330,6 @@ app.post('/api/tracks', upload.fields([
     }
 });
 
-// ===== СТРИМИНГ =====
 app.get('/api/stream/:id', async (req, res) => {
     try {
         const trackId = req.params.id
@@ -362,45 +339,14 @@ app.get('/api/stream/:id', async (req, res) => {
             return res.status(404).json({ error: ERROR_CODES.TRACK_NOT_FOUND })
         }
         
-        const filePath = path.join(__dirname, tracks[0].file_url)
-        
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ error: ERROR_CODES.FILE_NOT_FOUND })
-        }
-        
-        const stat = fs.statSync(filePath)
-        const fileSize = stat.size
-        const range = req.headers.range
-        
-        if (range) {
-            const parts = range.replace(/bytes=/, "").split("-")
-            const start = parseInt(parts[0], 10)
-            const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1
-            const chunksize = (end - start) + 1
-            
-            const file = fs.createReadStream(filePath, { start, end })
-            
-            res.writeHead(206, {
-                'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-                'Accept-Ranges': 'bytes',
-                'Content-Length': chunksize,
-                'Content-Type': 'audio/mpeg',
-            })
-            file.pipe(res)
-        } else {
-            res.writeHead(200, {
-                'Content-Length': fileSize,
-                'Content-Type': 'audio/mpeg',
-            })
-            fs.createReadStream(filePath).pipe(res)
-        }
+        const fileUrl = tracks[0].file_url;
+        return res.redirect(fileUrl);
     } catch (error) {
         console.error(error)
         res.status(500).json({ error: error.message })
     }
 })
 
-// ===== ПОИСК =====
 app.get('/api/tracks/search', async (req, res) => {
     try {
         const { query, genre } = req.query;
@@ -456,7 +402,6 @@ app.get('/api/genres', async (req, res) => {
     }
 });
 
-// ===== НЕДАВНО ВЫПУЩЕННЫЕ =====
 app.get('/api/tracks/recent', async (req, res) => {
     try {
         const query = `
@@ -488,7 +433,6 @@ app.get('/api/tracks/recent', async (req, res) => {
     }
 })
 
-// ===== УДАЛИТЬ ТРЕК =====
 app.delete('/api/tracks/:id', async (req, res) => {
     try {
         const trackId = req.params.id;
@@ -504,7 +448,6 @@ app.delete('/api/tracks/:id', async (req, res) => {
         }
         const user = userRows[0];
         
-        // ✅ ПОЛУЧАЕМ ИНФОРМАЦИЮ О ТРЕКЕ (ВКЛЮЧАЯ ALBUM_ID)
         const [tracks] = await db.query(
             'SELECT id, user_id, file_url, cover_url, is_official, album_id FROM tracks WHERE id = ?', 
             [trackId]
@@ -517,9 +460,7 @@ app.delete('/api/tracks/:id', async (req, res) => {
         const track = tracks[0];
         const albumId = track.album_id;
         
-        // Проверка прав
         if (user.is_admin === 1) {
-            // Админ может удалить всё
         } else {
             if (track.is_official === 1) {
                 return res.status(403).json({ error: 'Нельзя удалить официальный трек' });
@@ -529,51 +470,54 @@ app.delete('/api/tracks/:id', async (req, res) => {
             }
         }
         
-        // 1. УДАЛЯЕМ ФАЙЛ ТРЕКА
-        const filePath = path.join(__dirname, track.file_url);
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-            console.log('🗑️ Файл трека удален:', track.file_url);
-        }
-        
-        // 2. УДАЛЯЕМ ОБЛОЖКУ ТРЕКА (ЕСЛИ ЕСТЬ)
-        if (track.cover_url) {
-            const coverPath = path.join(__dirname, track.cover_url);
-            if (fs.existsSync(coverPath)) {
-                fs.unlinkSync(coverPath);
-                console.log('🗑️ Обложка трека удалена:', track.cover_url);
+        if (track.file_url) {
+            const filePath = track.file_url;
+            const fileName = filePath.split('/').pop();
+            try {
+                const folder = filePath.includes('songs') ? 'songs' : 
+                               filePath.includes('covers') ? 'covers' : 
+                               filePath.includes('avatars') ? 'avatars' : '';
+                if (folder) {
+                    await supabase
+                        .storage
+                        .from(process.env.SUPABASE_BUCKET)
+                        .remove([`${folder}/${fileName}`]);
+                    console.log('🗑️ Файл удален из Supabase:', folder, fileName);
+                }
+            } catch (e) {
+                console.warn('Не удалось удалить файл из Supabase:', e.message);
             }
         }
         
-        // 3. УДАЛЯЕМ ТРЕК ИЗ БД
         await db.query('DELETE FROM tracks WHERE id = ?', [trackId]);
         console.log('🗑️ Трек удален из БД, ID:', trackId);
         
-        // 4. ✅ ПРОВЕРЯЕМ, ОСТАЛИСЬ ЛИ ТРЕКИ В АЛЬБОМЕ
         if (albumId) {
             const [remainingTracks] = await db.query(
                 'SELECT id FROM tracks WHERE album_id = ?', 
                 [albumId]
             );
             
-            // 5. ✅ ЕСЛИ ТРЕКОВ НЕ ОСТАЛОСЬ — УДАЛЯЕМ АЛЬБОМ И ЕГО ОБЛОЖКУ
             if (remainingTracks.length === 0) {
-                // Получаем информацию об альбоме
                 const [albums] = await db.query(
                     'SELECT cover_url FROM albums WHERE id = ?', 
                     [albumId]
                 );
                 
                 if (albums.length > 0 && albums[0].cover_url) {
-                    // Удаляем обложку альбома
-                    const albumCoverPath = path.join(__dirname, albums[0].cover_url);
-                    if (fs.existsSync(albumCoverPath)) {
-                        fs.unlinkSync(albumCoverPath);
-                        console.log('🗑️ Обложка альбома удалена:', albums[0].cover_url);
-                    }
+                    try {
+                        const coverPath = albums[0].cover_url;
+                        const coverName = coverPath.split('/').pop();
+                        if (coverName) {
+                            await supabase
+                                .storage
+                                .from(process.env.SUPABASE_BUCKET)
+                                .remove([`covers/${coverName}`]);
+                            console.log('🗑️ Обложка альбома удалена из Supabase');
+                        }
+                    } catch (e) {}
                 }
                 
-                // Удаляем альбом из БД
                 await db.query('DELETE FROM albums WHERE id = ?', [albumId]);
                 console.log('🗑️ Альбом удален (не осталось треков), ID:', albumId);
             } else {
@@ -588,7 +532,6 @@ app.delete('/api/tracks/:id', async (req, res) => {
     }
 });
 
-// ===== ПОЛУЧИТЬ ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ =====
 app.get('/api/user', async (req, res) => {
     try {
         const userId = req.headers['x-user-id'];
@@ -608,7 +551,6 @@ app.get('/api/user', async (req, res) => {
     }
 });
 
-// ===== ПОЛУЧИТЬ ВСЕХ ИСПОЛНИТЕЛЕЙ =====
 app.get('/api/artists', async (req, res) => {
     try {
         const query = 'SELECT * FROM artists ORDER BY name'
@@ -620,7 +562,6 @@ app.get('/api/artists', async (req, res) => {
     }
 })
 
-// ===== ПОЛУЧИТЬ ВСЕ АЛЬБОМЫ =====
 app.get('/api/albums', async (req, res) => {
     try {
         const query = `
@@ -639,7 +580,6 @@ app.get('/api/albums', async (req, res) => {
     }
 })
 
-// ===== ПОЛУЧИТЬ БИОГРАФИЮ ИСПОЛНИТЕЛЯ =====
 app.get('/api/artist/:name/bio', async (req, res) => {
     try {
         const artistName = decodeURIComponent(req.params.name);
@@ -668,7 +608,6 @@ app.get('/api/artist/:name/bio', async (req, res) => {
     }
 });
 
-// ===== ПОЛУЧИТЬ ДАННЫЕ ОБ ИСПОЛНИТЕЛЕ =====
 app.get('/api/artist/:name', async (req, res) => {
     try {
         const artistName = decodeURIComponent(req.params.name);
@@ -695,7 +634,6 @@ app.get('/api/artist/:name', async (req, res) => {
     }
 });
 
-// ===== УДАЛЕНИЕ ИСПОЛНИТЕЛЯ =====
 app.delete('/api/artists/:id', async (req, res) => {
     try {
         const artistId = req.params.id;
@@ -723,12 +661,19 @@ app.delete('/api/artists/:id', async (req, res) => {
         
         for (const track of tracks) {
             if (track.file_url) {
-                const filePath = path.join(__dirname, track.file_url);
-                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-            }
-            if (track.cover_url) {
-                const coverPath = path.join(__dirname, track.cover_url);
-                if (fs.existsSync(coverPath)) fs.unlinkSync(coverPath);
+                try {
+                    const filePath = track.file_url;
+                    const fileName = filePath.split('/').pop();
+                    const folder = filePath.includes('songs') ? 'songs' : 
+                                   filePath.includes('covers') ? 'covers' : 
+                                   filePath.includes('avatars') ? 'avatars' : '';
+                    if (folder && fileName) {
+                        await supabase
+                            .storage
+                            .from(process.env.SUPABASE_BUCKET)
+                            .remove([`${folder}/${fileName}`]);
+                    }
+                } catch (e) {}
             }
         }
         
@@ -737,8 +682,16 @@ app.delete('/api/artists/:id', async (req, res) => {
         
         const [artist] = await db.query('SELECT avatar_url FROM artists WHERE id = ?', [artistId]);
         if (artist.length > 0 && artist[0].avatar_url) {
-            const avatarPath = path.join(__dirname, artist[0].avatar_url);
-            if (fs.existsSync(avatarPath)) fs.unlinkSync(avatarPath);
+            try {
+                const avatarPath = artist[0].avatar_url;
+                const avatarName = avatarPath.split('/').pop();
+                if (avatarName) {
+                    await supabase
+                        .storage
+                        .from(process.env.SUPABASE_BUCKET)
+                        .remove([`avatars/${avatarName}`]);
+                }
+            } catch (e) {}
         }
         
         await db.query('DELETE FROM artists WHERE id = ?', [artistId]);
@@ -750,7 +703,6 @@ app.delete('/api/artists/:id', async (req, res) => {
     }
 });
 
-// ===== РЕДАКТИРОВАНИЕ ИСПОЛНИТЕЛЯ =====
 app.put('/api/artists/:id', async (req, res) => {
     try {
         const artistId = req.params.id;
@@ -785,7 +737,6 @@ app.put('/api/artists/:id', async (req, res) => {
     }
 });
 
-// ===== УДАЛЕНИЕ АЛЬБОМА =====
 app.delete('/api/albums/:id', async (req, res) => {
     try {
         const albumId = req.params.id;
@@ -817,19 +768,34 @@ app.delete('/api/albums/:id', async (req, res) => {
         
         for (const track of tracks) {
             if (track.file_url) {
-                const filePath = path.join(__dirname, track.file_url);
-                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-            }
-            if (track.cover_url) {
-                const coverPath = path.join(__dirname, track.cover_url);
-                if (fs.existsSync(coverPath)) fs.unlinkSync(coverPath);
+                try {
+                    const filePath = track.file_url;
+                    const fileName = filePath.split('/').pop();
+                    const folder = filePath.includes('songs') ? 'songs' : 
+                                   filePath.includes('covers') ? 'covers' : 
+                                   filePath.includes('avatars') ? 'avatars' : '';
+                    if (folder && fileName) {
+                        await supabase
+                            .storage
+                            .from(process.env.SUPABASE_BUCKET)
+                            .remove([`${folder}/${fileName}`]);
+                    }
+                } catch (e) {}
             }
         }
         await db.query('DELETE FROM tracks WHERE album_id = ?', [albumId]);
         
         if (albumRows[0].cover_url) {
-            const coverPath = path.join(__dirname, albumRows[0].cover_url);
-            if (fs.existsSync(coverPath)) fs.unlinkSync(coverPath);
+            try {
+                const coverPath = albumRows[0].cover_url;
+                const coverName = coverPath.split('/').pop();
+                if (coverName) {
+                    await supabase
+                        .storage
+                        .from(process.env.SUPABASE_BUCKET)
+                        .remove([`covers/${coverName}`]);
+                }
+            } catch (e) {}
         }
         
         await db.query('DELETE FROM albums WHERE id = ?', [albumId]);
@@ -841,7 +807,6 @@ app.delete('/api/albums/:id', async (req, res) => {
     }
 });
 
-// ===== РЕДАКТИРОВАНИЕ АЛЬБОМА =====
 app.put('/api/albums/:id', async (req, res) => {
     try {
         const albumId = req.params.id;
@@ -876,18 +841,7 @@ app.put('/api/albums/:id', async (req, res) => {
     }
 });
 
-// ===== ДОБАВЛЕНИЕ АВАТАРКИ =====
-const avatarStorage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const dir = 'static/avatars/';
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        cb(null, dir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueName + path.extname(file.originalname));
-    }
-});
+const avatarStorage = multer.memoryStorage();
 const avatarUpload = multer({ 
     storage: avatarStorage,
     limits: { fileSize: 2 * 1024 * 1024 }
@@ -914,7 +868,6 @@ app.post('/api/artists/:id/avatar', avatarUpload.single('avatar'), async (req, r
         
         const [artistRows] = await db.query('SELECT * FROM artists WHERE id = ?', [artistId]);
         if (artistRows.length === 0) {
-            fs.unlinkSync(req.file.path);
             return res.status(404).json({ error: ERROR_CODES.ARTIST_NOT_FOUND });
         }
         
@@ -924,16 +877,14 @@ app.post('/api/artists/:id/avatar', avatarUpload.single('avatar'), async (req, r
         const isAdmin = user.is_admin === 1;
         
         if (!isAdmin && (!isOwner || hasOfficial)) {
-            fs.unlinkSync(req.file.path);
             return res.status(403).json({ error: ERROR_CODES.NO_PERMISSION_AVATAR });
         }
         
-        if (artistRows[0].avatar_url) {
-            const oldPath = path.join(__dirname, artistRows[0].avatar_url);
-            if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        const avatarUrl = await uploadToSupabase(req.file, 'avatars', req.file.mimetype);
+        if (!avatarUrl) {
+            return res.status(500).json({ error: 'Ошибка загрузки аватарки' });
         }
         
-        const avatarUrl = `/static/avatars/${req.file.filename}`;
         await db.query('UPDATE artists SET avatar_url = ? WHERE id = ?', [avatarUrl, artistId]);
         
         res.status(200).json({ message: ERROR_CODES.SUCCESS_AVATAR_UPDATED, avatar_url: avatarUrl });
@@ -943,11 +894,6 @@ app.post('/api/artists/:id/avatar', avatarUpload.single('avatar'), async (req, r
     }
 });
 
-// ============================================
-// НОВЫЕ МАРШРУТЫ ДЛЯ HOMEPAGE
-// ============================================
-
-// 1. НЕДАВНИЕ ТРЕКИ (только от юзеров, не админов)
 app.get('/api/tracks/recent-user', async (req, res) => {
     try {
         const query = `
@@ -973,8 +919,7 @@ app.get('/api/tracks/recent-user', async (req, res) => {
                 AND t.user_id != 1
                 AND t.user_id IS NOT NULL
             ORDER BY t.id DESC
-            LIMIT 20
-        `;
+            LIMIT 20        `;
         const [tracks] = await db.query(query);
         res.status(200).json(tracks);
     } catch (error) {
@@ -983,7 +928,6 @@ app.get('/api/tracks/recent-user', async (req, res) => {
     }
 });
 
-// 2. НЕДАВНИЕ АЛЬБОМЫ (только от юзеров)
 app.get('/api/albums/recent-user', async (req, res) => {
     try {
         const query = `
@@ -1014,7 +958,6 @@ app.get('/api/albums/recent-user', async (req, res) => {
     }
 });
 
-// 3. НЕДАВНИЕ ИСПОЛНИТЕЛИ (только от юзеров)
 app.get('/api/artists/recent-user', async (req, res) => {
     try {
         const query = `
@@ -1042,7 +985,6 @@ app.get('/api/artists/recent-user', async (req, res) => {
     }
 });
 
-// 4. ПОПУЛЯРНЫЕ ТРЕКИ (только админ)
 app.get('/api/tracks/popular', async (req, res) => {
     try {
         const query = `
@@ -1076,7 +1018,6 @@ app.get('/api/tracks/popular', async (req, res) => {
     }
 });
 
-// 5. ПОПУЛЯРНЫЕ АЛЬБОМЫ (только админ)
 app.get('/api/albums/popular', async (req, res) => {
     try {
         const query = `
@@ -1105,7 +1046,6 @@ app.get('/api/albums/popular', async (req, res) => {
     }
 });
 
-// 6. ПОПУЛЯРНЫЕ ИСПОЛНИТЕЛИ (только админ)
 app.get('/api/artists/popular', async (req, res) => {
     try {
         const query = `
