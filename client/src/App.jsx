@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Homepage from './pages/Homepage';
-import Librarypage from './pages/Librarypage';
+import LibraryPage from './pages/Librarypage';
 import Artistpage from './pages/Artistpage';
 import Albumpage from './pages/Albumpage';
-import PlayerBar from './components/Playerbar';
+import Playerbar from './components/Playerbar';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import UploadModal from './components/UploadModal';
@@ -22,6 +22,7 @@ import API_URL from './config';
 import i18n from './i18n';
 
 function App() {
+    const API_URL = import.meta.env.VITE_API_URL
     // ===== СОСТОЯНИЯ ПЛЕЕРА =====
     const [tracks, setTracks] = useState([]);
     const [filteredTracks, setFilteredTracks] = useState([]);
@@ -38,7 +39,7 @@ function App() {
         return saved ? JSON.parse(saved) : 0;
     });
     
-    // ===== ДРУГИЕ СОСТОЯНИЯ =====
+    // ===== ДРУГИЕ СОСТОЯНИЯ ====
     const [loading, setLoading] = useState(true);
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
