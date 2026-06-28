@@ -258,7 +258,7 @@ function Homepage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUserI
                     id={album.id}
                     title={album.title}
                     subtitle={subtitle}
-                    image={album.cover_url ? `${API_URL}${album.cover_url}` : null}
+                    image={album.cover_url || null}
                     type="album"
                     isPlaying={false}
                     isActive={false}
@@ -291,7 +291,7 @@ function Homepage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUserI
                     id={artist.id}
                     title={artist.name}
                     subtitle={subtitle}
-                    image={artist.avatar_url ? `${API_URL}${artist.avatar_url}` : null}
+                    image={artist.avatar_url || null}
                     type="artist"
                     isPlaying={false}
                     isActive={false}
