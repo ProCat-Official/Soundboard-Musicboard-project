@@ -612,7 +612,7 @@ function BottomNav({ tracks, onPlay, selectedTrack, isPlaying, setIsPlaying }) {
                                 <ListItemIcon>
                                     {item.type === 'artist' ? (
                                         <img
-                                            src={item.avatar ? `${API_URL}${item.avatar}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=621d3e&color=fff&size=32`}
+                                            src={item.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=621d3e&color=fff&size=32`}
                                             alt={item.name}
                                             style={{
                                                 width: '32px',
@@ -627,7 +627,7 @@ function BottomNav({ tracks, onPlay, selectedTrack, isPlaying, setIsPlaying }) {
                                     ) : (
                                         item.cover ? (
                                             <img
-                                                src={`${API_URL}${item.cover}`}
+                                                src={item.cover || null}
                                                 alt={item.name}
                                                 style={{
                                                     width: '32px',
