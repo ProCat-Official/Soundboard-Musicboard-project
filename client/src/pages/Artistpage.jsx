@@ -99,7 +99,7 @@ function Artistpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUse
                     name: artistData.name || artistName.replace(/_/g, ' '),
                     tracks: artistTracks.length,
                     cover: artistTracks[0].cover_url,
-                    avatar: `${API_URL}${artistData.avatar_url || '/static/artists/default.jpg'}`,
+                    avatar: artistData.avatar_url || '/static/artists/default.jpg',
                     user_id: artistTracks[0]?.user_id || null,
                 });
             } else {
@@ -566,7 +566,7 @@ function Artistpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUse
                                 {track.cover_url ? (
                                     <Box
                                         component="img"
-                                        src={`${API_URL}${track.cover_url}`}
+                                        src={track.cover_url || null}
                                         alt={track.title}
                                         sx={{
                                             width: { xs: '46px', md: '40px' },
@@ -796,7 +796,7 @@ function Artistpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUse
                                         <CardMedia
                                             component="img"
                                             height={window.innerWidth < 600 ? '160' : '200'}
-                                            image={`${API_URL}${album.cover}`}
+                                            image={album.cover || null}
                                             alt={album.name}
                                             sx={{ 
                                                 objectFit: 'cover',
