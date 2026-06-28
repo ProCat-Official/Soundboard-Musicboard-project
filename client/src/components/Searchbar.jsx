@@ -316,7 +316,7 @@ function SearchBar({ onSearch }) {
                                     if (item.type === 'artist') {
                                         iconContent = (
                                             <img
-                                                src={item.avatar ? `${API_URL}${item.avatar}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=621d3e&color=fff&size=32`}
+                                                src={item.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=621d3e&color=fff&size=32`}
                                                 alt={item.name}
                                                 style={{
                                                     width: '32px',
@@ -334,7 +334,7 @@ function SearchBar({ onSearch }) {
                                         if (coverUrl) {
                                             iconContent = (
                                                 <img
-                                                    src={`${API_URL}${coverUrl}`}
+                                                    src={coverUrl || null}
                                                     alt={item.name}
                                                     style={{
                                                         width: '32px',
