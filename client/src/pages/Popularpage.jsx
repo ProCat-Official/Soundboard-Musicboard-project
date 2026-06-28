@@ -192,7 +192,7 @@ function PopularPage({ onPlay, selectedTrack, isPlaying, setIsPlaying }) {
                     id={track.id}
                     title={track.title}
                     subtitle={subtitle}
-                    image={track.cover_url ? `${API_URL}${track.cover_url}` : null}
+                    image={track.cover_url || null}
                     type="track"
                     isPlaying={isPlaying}
                     isActive={isActive}
@@ -224,7 +224,7 @@ function PopularPage({ onPlay, selectedTrack, isPlaying, setIsPlaying }) {
                     id={album.id}
                     title={album.title}
                     subtitle={subtitle}
-                    image={album.cover_url ? `${API_URL}${album.cover_url}` : null}
+                    image={album.cover_url || null}
                     type="album"
                     isPlaying={false}
                     isActive={false}
@@ -251,7 +251,7 @@ function PopularPage({ onPlay, selectedTrack, isPlaying, setIsPlaying }) {
                     id={artist.id}
                     title={artist.name}
                     subtitle={subtitle}
-                    image={artist.avatar_url ? `${API_URL}${artist.avatar_url}` : null}
+                    image={artist.avatar_url || null}
                     type="artist"
                     isPlaying={false}
                     isActive={false}
