@@ -260,7 +260,7 @@ function Albumpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUser
                 {/* Обложка - адаптивный размер */}
                 <Box
                     component="img"
-                    src={album.cover ? `${API_URL}${album.cover}` : 'https://via.placeholder.com/300x300?text=No+Cover'}
+                    src={album.cover || 'https://via.placeholder.com/300x300?text=No+Cover'}
                     alt={album.name}
                     sx={{
                         width: { xs: '180px', md: '300px' },
@@ -317,7 +317,7 @@ function Albumpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUser
                     >
                         {album.artistAvatar && (
                             <img
-                                src={`${API_URL}${album.artistAvatar}`}
+                                src={album.artistAvatar || ''}
                                 alt={album.artist}
                                 style={{
                                     width: '25px',
@@ -663,7 +663,7 @@ function Albumpage({ onPlay, selectedTrack, isPlaying, setIsPlaying, currentUser
                             <CardMedia
                                 component="img"
                                 height={window.innerWidth < 600 ? 150 : 200}
-                                image={otherAlbum.cover ? `${API_URL}${otherAlbum.cover}` : 'https://via.placeholder.com/200x200?text=No+Cover'}
+                                image={otherAlbum.cover || 'https://via.placeholder.com/200x200?text=No+Cover'}
                                 alt={otherAlbum.name}
                                 sx={{ 
                                     objectFit: 'cover',
