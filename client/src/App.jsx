@@ -22,7 +22,6 @@ import API_URL from './config';
 import i18n from './i18n';
 
 function App() {
-    const API_URL = import.meta.env.VITE_API_URL
     // ===== СОСТОЯНИЯ ПЛЕЕРА =====
     const [tracks, setTracks] = useState([]);
     const [filteredTracks, setFilteredTracks] = useState([]);
