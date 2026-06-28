@@ -306,7 +306,7 @@ function PlayerBar({
     {/* Обложка */}
     <Box
         component="img"
-        src={track.cover_url ? `${API_URL}${track.cover_url}` : 'https://via.placeholder.com/48'}
+        src={track.cover_url || 'https://via.placeholder.com/48'}
         sx={{
             width: 48,
             height: 48,
@@ -429,7 +429,7 @@ function PlayerBar({
         }}>
             <Box
                 component="img"
-                src={track.cover_url ? `${API_URL}${track.cover_url}` : 'https://via.placeholder.com/50'}
+                src={track.cover_url || 'https://via.placeholder.com/50'}
                 alt="cover"
                 onClick={() => setFullscreenOpen(true)}
                 sx={{
@@ -682,7 +682,7 @@ function PlayerBar({
                             py: 4,
                         }}>
                             <img
-                                src={track.cover_url ? `${API_URL}${track.cover_url}` : 'https://via.placeholder.com/400x400?text=No+Cover'}
+                                src={track.cover_url || 'https://via.placeholder.com/400x400?text=No+Cover'}
                                 alt={track.title}
                                 style={{
                                     width: '100%',
